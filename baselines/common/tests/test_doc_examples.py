@@ -24,7 +24,7 @@ def test_lstm_example():
         policy = policies.build_policy(venv, models.lstm(128))(nbatch=1, nsteps=1)
 
         # initialize tensorflow variables
-        sess.run(tf.global_variables_initializer())
+        sess.run(tf.compat.v1.global_variables_initializer())
 
         # prepare environment variables
         ob = venv.reset()

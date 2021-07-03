@@ -112,15 +112,15 @@ def scope_vars(scope, trainable_only=False):
     vars: [tf.Variable]
         list of variables in `scope`.
     """
-    return tf.get_collection(
-        tf.GraphKeys.TRAINABLE_VARIABLES if trainable_only else tf.GraphKeys.GLOBAL_VARIABLES,
+    return tf.compat.v1.get_collection(
+        tf.compat.v1.GraphKeys.TRAINABLE_VARIABLES if trainable_only else tf.compat.v1.GraphKeys.GLOBAL_VARIABLES,
         scope=scope if isinstance(scope, str) else scope.name
     )
 
 
 def scope_name():
     """Returns the name of current scope as a string, e.g. deepq/q_func"""
-    return tf.get_variable_scope().name
+    return tf.compat.v1.get_variable_scope().name
 
 
 def absolute_scope_name(relative_scope_name):
@@ -129,7 +129,7 @@ def absolute_scope_name(relative_scope_name):
 
 
 def default_param_noise_filter(var):
-    if var not in tf.trainable_variables():
+    if var not in tf.compat.v1.trainable_variables():
         # We never perturb non-trainable vars.
         return False
     if "fully_connected" in var.name:
@@ -148,7 +148,7 @@ def build_act(make_obs_ph, q_func, num_actions, scope="deepq", reuse=None):
 
     Parameters
     ----------
-    make_obs_ph: str -> tf.placeholder or TfInput
+    make_obs_ph: str -> tf.compat.v1.placeholder or TfInput
         a function that take a name and creates a placeholder of input with that name
     q_func: (tf.Variable, int, str, bool) -> tf.Variable
         the model that takes the following inputs:
@@ -173,12 +173,12 @@ def build_act(make_obs_ph, q_func, num_actions, scope="deepq", reuse=None):
         function to select and action given observation.
 `       See the top of the file for details.
     """
-    with tf.variable_scope(scope, reuse=reuse):
+    with tf.compat.v1.variable_scope(scope, reuse=reuse):
         observations_ph = make_obs_ph("observation")
-        stochastic_ph = tf.placeholder(tf.bool, (), name="stochastic")
-        update_eps_ph = tf.placeholder(tf.float32, (), name="update_eps")
+        stochastic_ph = tf.compat.v1.placeholder(tf.bool, (), name="stochastic")
+        update_eps_ph = tf.compat.v1.placeholder(tf.float32, (), name="update_eps")
 
-        eps = tf.get_variable("eps", (), initializer=tf.constant_initializer(0))
+        eps = tf.compat.v1.get_variable("eps", (), initializer=tf.constant_initializer(0))
 
         q_values = q_func(observations_ph.get(), num_actions, scope="q_func")
         deterministic_actions = tf.argmax(q_values, axis=1)
@@ -204,7 +204,7 @@ def build_act_with_param_noise(make_obs_ph, q_func, num_actions, scope="deepq", 
 
     Parameters
     ----------
-    make_obs_ph: str -> tf.placeholder or TfInput
+    make_obs_ph: str -> tf.compat.v1.placeholder or TfInput
         a function that take a name and creates a placeholder of input with that name
     q_func: (tf.Variable, int, str, bool) -> tf.Variable
         the model that takes the following inputs:
@@ -235,17 +235,17 @@ def build_act_with_param_noise(make_obs_ph, q_func, num_actions, scope="deepq", 
     if param_noise_filter_func is None:
         param_noise_filter_func = default_param_noise_filter
 
-    with tf.variable_scope(scope, reuse=reuse):
+    with tf.compat.v1.variable_scope(scope, reuse=reuse):
         observations_ph = make_obs_ph("observation")
-        stochastic_ph = tf.placeholder(tf.bool, (), name="stochastic")
-        update_eps_ph = tf.placeholder(tf.float32, (), name="update_eps")
-        update_param_noise_threshold_ph = tf.placeholder(tf.float32, (), name="update_param_noise_threshold")
-        update_param_noise_scale_ph = tf.placeholder(tf.bool, (), name="update_param_noise_scale")
-        reset_ph = tf.placeholder(tf.bool, (), name="reset")
+        stochastic_ph = tf.compat.v1.placeholder(tf.bool, (), name="stochastic")
+        update_eps_ph = tf.compat.v1.placeholder(tf.float32, (), name="update_eps")
+        update_param_noise_threshold_ph = tf.compat.v1.placeholder(tf.float32, (), name="update_param_noise_threshold")
+        update_param_noise_scale_ph = tf.compat.v1.placeholder(tf.bool, (), name="update_param_noise_scale")
+        reset_ph = tf.compat.v1.placeholder(tf.bool, (), name="reset")
 
-        eps = tf.get_variable("eps", (), initializer=tf.constant_initializer(0))
-        param_noise_scale = tf.get_variable("param_noise_scale", (), initializer=tf.constant_initializer(0.01), trainable=False)
-        param_noise_threshold = tf.get_variable("param_noise_threshold", (), initializer=tf.constant_initializer(0.05), trainable=False)
+        eps = tf.compat.v1.get_variable("eps", (), initializer=tf.constant_initializer(0))
+        param_noise_scale = tf.compat.v1.get_variable("param_noise_scale", (), initializer=tf.constant_initializer(0.01), trainable=False)
+        param_noise_threshold = tf.compat.v1.get_variable("param_noise_threshold", (), initializer=tf.constant_initializer(0.05), trainable=False)
 
         # Unmodified Q.
         q_values = q_func(observations_ph.get(), num_actions, scope="q_func")
@@ -263,7 +263,7 @@ def build_act_with_param_noise(make_obs_ph, q_func, num_actions, scope="deepq", 
             for var, perturbed_var in zip(all_vars, all_perturbed_vars):
                 if param_noise_filter_func(perturbed_var):
                     # Perturb this variable.
-                    op = tf.assign(perturbed_var, var + tf.random_normal(shape=tf.shape(var), mean=0., stddev=param_noise_scale))
+                    op = tf.assign(perturbed_var, var + tf.compat.v1.random_normal(shape=tf.shape(var), mean=0., stddev=param_noise_scale))
                 else:
                     # Do not perturb, just assign.
                     op = tf.assign(perturbed_var, var)
@@ -320,7 +320,7 @@ def build_train(make_obs_ph, q_func, num_actions, optimizer, grad_norm_clipping=
 
     Parameters
     ----------
-    make_obs_ph: str -> tf.placeholder or TfInput
+    make_obs_ph: str -> tf.compat.v1.placeholder or TfInput
         a function that takes a name and creates a placeholder of input with that name
     q_func: (tf.Variable, int, str, bool) -> tf.Variable
         the model that takes the following inputs:
@@ -336,7 +336,7 @@ def build_train(make_obs_ph, q_func, num_actions, optimizer, grad_norm_clipping=
         number of actions
     reuse: bool
         whether or not to reuse the graph variables
-    optimizer: tf.train.Optimizer
+    optimizer: tf.compat.v1.train.Optimizer
         optimizer to use for the Q-learning objective.
     grad_norm_clipping: float or None
         clip gradient norms to this value. If None no clipping is performed.
@@ -375,22 +375,22 @@ def build_train(make_obs_ph, q_func, num_actions, optimizer, grad_norm_clipping=
     else:
         act_f = build_act(make_obs_ph, q_func, num_actions, scope=scope, reuse=reuse)
 
-    with tf.variable_scope(scope, reuse=reuse):
+    with tf.compat.v1.variable_scope(scope, reuse=reuse):
         # set up placeholders
         obs_t_input = make_obs_ph("obs_t")
-        act_t_ph = tf.placeholder(tf.int32, [None], name="action")
-        rew_t_ph = tf.placeholder(tf.float32, [None], name="reward")
+        act_t_ph = tf.compat.v1.placeholder(tf.int32, [None], name="action")
+        rew_t_ph = tf.compat.v1.placeholder(tf.float32, [None], name="reward")
         obs_tp1_input = make_obs_ph("obs_tp1")
-        done_mask_ph = tf.placeholder(tf.float32, [None], name="done")
-        importance_weights_ph = tf.placeholder(tf.float32, [None], name="weight")
+        done_mask_ph = tf.compat.v1.placeholder(tf.float32, [None], name="done")
+        importance_weights_ph = tf.compat.v1.placeholder(tf.float32, [None], name="weight")
 
         # q network evaluation
         q_t = q_func(obs_t_input.get(), num_actions, scope="q_func", reuse=True)  # reuse parameters from act
-        q_func_vars = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope=tf.get_variable_scope().name + "/q_func")
+        q_func_vars = tf.compat.v1.get_collection(tf.compat.v1.GraphKeys.GLOBAL_VARIABLES, scope=tf.compat.v1.get_variable_scope().name + "/q_func")
 
         # target q network evalution
         q_tp1 = q_func(obs_tp1_input.get(), num_actions, scope="target_q_func")
-        target_q_func_vars = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope=tf.get_variable_scope().name + "/target_q_func")
+        target_q_func_vars = tf.compat.v1.get_collection(tf.compat.v1.GraphKeys.GLOBAL_VARIABLES, scope=tf.compat.v1.get_variable_scope().name + "/target_q_func")
 
         # q scores for actions which we know were selected in the given state.
         q_t_selected = tf.reduce_sum(q_t * tf.one_hot(act_t_ph, num_actions), 1)

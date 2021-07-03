@@ -55,7 +55,7 @@ def get_perturbed_actor_updates(actor, perturbed_actor, param_noise_stddev):
     for var, perturbed_var in zip(actor.vars, perturbed_actor.vars):
         if var in actor.perturbable_vars:
             logger.info('  {} <- {} + noise'.format(perturbed_var.name, var.name))
-            updates.append(tf.assign(perturbed_var, var + tf.random_normal(tf.shape(var), mean=0., stddev=param_noise_stddev)))
+            updates.append(tf.assign(perturbed_var, var + tf.compat.v1.random_normal(tf.shape(var), mean=0., stddev=param_noise_stddev)))
         else:
             logger.info('  {} <- {}'.format(perturbed_var.name, var.name))
             updates.append(tf.assign(perturbed_var, var))
@@ -69,13 +69,13 @@ class DDPG(object):
         batch_size=128, observation_range=(-5., 5.), action_range=(-1., 1.), return_range=(-np.inf, np.inf),
         critic_l2_reg=0., actor_lr=1e-4, critic_lr=1e-3, clip_norm=None, reward_scale=1.):
         # Inputs.
-        self.obs0 = tf.placeholder(tf.float32, shape=(None,) + observation_shape, name='obs0')
-        self.obs1 = tf.placeholder(tf.float32, shape=(None,) + observation_shape, name='obs1')
-        self.terminals1 = tf.placeholder(tf.float32, shape=(None, 1), name='terminals1')
-        self.rewards = tf.placeholder(tf.float32, shape=(None, 1), name='rewards')
-        self.actions = tf.placeholder(tf.float32, shape=(None,) + action_shape, name='actions')
-        self.critic_target = tf.placeholder(tf.float32, shape=(None, 1), name='critic_target')
-        self.param_noise_stddev = tf.placeholder(tf.float32, shape=(), name='param_noise_stddev')
+        self.obs0 = tf.compat.v1.placeholder(tf.float32, shape=(None,) + observation_shape, name='obs0')
+        self.obs1 = tf.compat.v1.placeholder(tf.float32, shape=(None,) + observation_shape, name='obs1')
+        self.terminals1 = tf.compat.v1.placeholder(tf.float32, shape=(None, 1), name='terminals1')
+        self.rewards = tf.compat.v1.placeholder(tf.float32, shape=(None, 1), name='rewards')
+        self.actions = tf.compat.v1.placeholder(tf.float32, shape=(None,) + action_shape, name='actions')
+        self.critic_target = tf.compat.v1.placeholder(tf.float32, shape=(None, 1), name='critic_target')
+        self.param_noise_stddev = tf.compat.v1.placeholder(tf.float32, shape=(), name='param_noise_stddev')
 
         # Parameters.
         self.gamma = gamma
@@ -101,7 +101,7 @@ class DDPG(object):
 
         # Observation normalization.
         if self.normalize_observations:
-            with tf.variable_scope('obs_rms'):
+            with tf.compat.v1.variable_scope('obs_rms'):
                 self.obs_rms = RunningMeanStd(shape=observation_shape)
         else:
             self.obs_rms = None
@@ -112,7 +112,7 @@ class DDPG(object):
 
         # Return normalization.
         if self.normalize_returns:
-            with tf.variable_scope('ret_rms'):
+            with tf.compat.v1.variable_scope('ret_rms'):
                 self.ret_rms = RunningMeanStd()
         else:
             self.ret_rms = None
@@ -204,9 +204,9 @@ class DDPG(object):
 
     def setup_popart(self):
         # See https://arxiv.org/pdf/1602.07714.pdf for details.
-        self.old_std = tf.placeholder(tf.float32, shape=[1], name='old_std')
+        self.old_std = tf.compat.v1.placeholder(tf.float32, shape=[1], name='old_std')
         new_std = self.ret_rms.std
-        self.old_mean = tf.placeholder(tf.float32, shape=[1], name='old_mean')
+        self.old_mean = tf.compat.v1.placeholder(tf.float32, shape=[1], name='old_mean')
         new_mean = self.ret_rms.mean
 
         self.renormalize_Q_outputs_op = []
@@ -332,7 +332,7 @@ class DDPG(object):
 
     def initialize(self, sess):
         self.sess = sess
-        self.sess.run(tf.global_variables_initializer())
+        self.sess.run(tf.compat.v1.global_variables_initializer())
         self.actor_optimizer.sync()
         self.critic_optimizer.sync()
         self.sess.run(self.target_init_updates)

@@ -66,7 +66,7 @@ def evaluate_env(env_name, seed, policy_hidden_size, stochastic, reuse, prefix):
         # Do one evaluation
         upper_bound = sum(dataset.rets[:limit])/limit
         checkpoint_dir = get_checkpoint_dir(checkpoint_list, limit, prefix=prefix)
-        checkpoint_path = tf.train.latest_checkpoint(checkpoint_dir)
+        checkpoint_path = tf.compat.v1.train.latest_checkpoint(checkpoint_dir)
         env = gym.make(env_name + '-v1')
         env.seed(seed)
         print('Trajectory limitation: {}, Load checkpoint: {}, '.format(limit, checkpoint_path))

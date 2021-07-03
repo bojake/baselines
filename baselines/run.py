@@ -14,6 +14,8 @@ from baselines.common.tf_util import get_session
 from baselines import logger
 from importlib import import_module
 
+tf.compat.v1.disable_eager_execution()
+
 try:
     from mpi4py import MPI
 except ImportError:
@@ -103,7 +105,7 @@ def build_env(args):
             env = VecFrameStack(env, frame_stack_size)
 
     else:
-        config = tf.ConfigProto(allow_soft_placement=True,
+        config = tf.compat.v1.ConfigProto(allow_soft_placement=True,
                                intra_op_parallelism_threads=1,
                                inter_op_parallelism_threads=1)
         config.gpu_options.allow_growth = True

@@ -202,7 +202,7 @@ def learn(env,
         make_obs_ph=make_obs_ph,
         q_func=q_func,
         num_actions=env.action_space.n,
-        optimizer=tf.train.AdamOptimizer(learning_rate=lr),
+        optimizer=tf.compat.v1.train.AdamOptimizer(learning_rate=lr),
         gamma=gamma,
         grad_norm_clipping=10,
         param_noise=param_noise
@@ -247,7 +247,7 @@ def learn(env,
         model_file = os.path.join(td, "model")
         model_saved = False
 
-        if tf.train.latest_checkpoint(td) is not None:
+        if tf.compat.v1.train.latest_checkpoint(td) is not None:
             load_variables(model_file)
             logger.log('Loaded model from {}'.format(model_file))
             model_saved = True

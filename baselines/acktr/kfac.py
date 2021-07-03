@@ -102,7 +102,7 @@ class KfacOptimizer():
                     bTensor = [
                         i for i in bpropOp.inputs if 'gradientsSampled' in i.name][-1]
                     bTensorShape = fpropOp.outputs[0].get_shape()
-                    if bTensor.get_shape()[0].value == None:
+                    if bTensor.get_shape() == None:
                         bTensor.set_shape(bTensorShape)
                     bTensors.append(bTensor)
                     ###
@@ -119,7 +119,7 @@ class KfacOptimizer():
                     if len(bInputsList) > 0:
                         bTensor = bInputsList[0]
                         bTensorShape = fpropOp.outputs[0].get_shape()
-                        if len(bTensor.get_shape()) > 0 and bTensor.get_shape()[0].value == None:
+                        if len(bTensor.get_shape()) > 0 and bTensor.get_shape()[0] == None:
                             bTensor.set_shape(bTensorShape)
                         bTensors.append(bTensor)
                     fpropOp_name = opTypes.append('UNK-' + fpropOp.op_def.name)
@@ -285,7 +285,7 @@ class KfacOptimizer():
     def compute_and_apply_stats(self, loss_sampled, var_list=None):
         varlist = var_list
         if varlist is None:
-            varlist = tf.trainable_variables()
+            varlist = tf.compat.v1.trainable_variables()
 
         stats = self.compute_stats(loss_sampled, var_list=varlist)
         return self.apply_stats(stats)
@@ -293,7 +293,7 @@ class KfacOptimizer():
     def compute_stats(self, loss_sampled, var_list=None):
         varlist = var_list
         if varlist is None:
-            varlist = tf.trainable_variables()
+            varlist = tf.compat.v1.trainable_variables()
 
         gs = tf.gradients(loss_sampled, varlist, name='gradientsSampled')
         self.gs = gs
@@ -416,11 +416,11 @@ class KfacOptimizer():
 
                     # assume sampled loss is averaged. TO-DO:figure out better
                     # way to handle this
-                    bpropFactor *= tf.to_float(B)
+                    bpropFactor *= tf.compat.v1.to_float(B)
                     ##
 
                     cov_b = tf.matmul(
-                        bpropFactor, bpropFactor, transpose_a=True) / tf.to_float(tf.shape(bpropFactor)[0])
+                        bpropFactor, bpropFactor, transpose_a=True) / tf.compat.v1.to_float(tf.shape(bpropFactor)[0])
 
                     updateOps.append(cov_b)
                     statsUpdates[stats_var] = cov_b
@@ -463,7 +463,7 @@ class KfacOptimizer():
 
             def dequeue_stats_op():
                 return queue.dequeue()
-            self.qr_stats = tf.train.QueueRunner(queue, [enqueue_op])
+            self.qr_stats = tf.compat.v1.train.QueueRunner(queue, [enqueue_op])
             update_stats_op = tf.cond(tf.equal(queue.size(), tf.convert_to_tensor(
                 0)), tf.no_op, lambda: tf.group(*[dequeue_stats_op(), ]))
         else:
@@ -803,7 +803,7 @@ class KfacOptimizer():
     def compute_gradients(self, loss, var_list=None):
         varlist = var_list
         if varlist is None:
-            varlist = tf.trainable_variables()
+            varlist = tf.compat.v1.trainable_variables()
         g = tf.gradients(loss, varlist)
 
         return [(a, b) for a, b in zip(g, varlist)]
@@ -830,7 +830,7 @@ class KfacOptimizer():
             def dequeue_op():
                 return queue.dequeue()
 
-            qr = tf.train.QueueRunner(queue, [enqueue_op])
+            qr = tf.compat.v1.train.QueueRunner(queue, [enqueue_op])
 
         updateOps = []
         global_step_op = tf.assign_add(self.global_step, 1)
@@ -876,9 +876,9 @@ class KfacOptimizer():
                     u = tf.cond(tf.greater(self.factor_step,
                                            tf.convert_to_tensor(0)), getKfacGradOp, gradOp)
 
-                    optim = tf.train.MomentumOptimizer(
+                    optim = tf.compat.v1.train.MomentumOptimizer(
                         self._lr * (1. - self._momentum), self._momentum)
-                    #optim = tf.train.AdamOptimizer(self._lr, epsilon=0.01)
+                    #optim = tf.compat.v1.train.AdamOptimizer(self._lr, epsilon=0.01)
 
                     def optimOp():
                         def updateOptimOp():
@@ -895,7 +895,7 @@ class KfacOptimizer():
         return tf.group(*updateOps), qr
 
     def apply_gradients(self, grads):
-        coldOptim = tf.train.MomentumOptimizer(
+        coldOptim = tf.compat.v1.train.MomentumOptimizer(
             self._cold_lr, self._momentum)
 
         def coldSGDstart():

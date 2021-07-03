@@ -5,7 +5,7 @@ from baselines.common.vec_env.dummy_vec_env import DummyVecEnv
 N_TRIALS = 10000
 N_EPISODES = 100
 
-_sess_config = tf.ConfigProto(
+_sess_config = tf.compat.v1.ConfigProto(
     allow_soft_placement=True,
     intra_op_parallelism_threads=1,
     inter_op_parallelism_threads=1
@@ -20,7 +20,7 @@ def simple_test(env_fn, learn_fn, min_reward_fraction, n_trials=N_TRIALS):
     np.random.seed(0)
     env = DummyVecEnv([seeded_env_fn])
     with tf.Graph().as_default(), tf.Session(config=_sess_config).as_default():
-        tf.set_random_seed(0)
+        tf.compat.v1.set_random_seed(0)
         model = learn_fn(env)
         sum_rew = 0
         done = True

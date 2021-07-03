@@ -23,15 +23,15 @@ class Model(object):
 
         self.sess = sess = get_session()
         nbatch = nenvs * nsteps
-        with tf.variable_scope('acktr_model', reuse=tf.AUTO_REUSE):
+        with tf.compat.v1.variable_scope('acktr_model', reuse=tf.compat.v1.AUTO_REUSE):
             self.model = step_model = policy(nenvs, 1, sess=sess)
             self.model2 = train_model = policy(nenvs*nsteps, nsteps, sess=sess)
 
         A = train_model.pdtype.sample_placeholder([None])
-        ADV = tf.placeholder(tf.float32, [nbatch])
-        R = tf.placeholder(tf.float32, [nbatch])
-        PG_LR = tf.placeholder(tf.float32, [])
-        VF_LR = tf.placeholder(tf.float32, [])
+        ADV = tf.compat.v1.placeholder(tf.float32, [nbatch])
+        R = tf.compat.v1.placeholder(tf.float32, [nbatch])
+        PG_LR = tf.compat.v1.placeholder(tf.float32, [])
+        VF_LR = tf.compat.v1.placeholder(tf.float32, [])
 
         neglogpac = train_model.pd.neglogp(A)
         self.logits = train_model.pi
@@ -46,7 +46,7 @@ class Model(object):
 
         ##Fisher loss construction
         self.pg_fisher = pg_fisher_loss = -tf.reduce_mean(neglogpac)
-        sample_net = train_model.vf + tf.random_normal(tf.shape(train_model.vf))
+        sample_net = train_model.vf + tf.compat.v1.random_normal(tf.shape(train_model.vf))
         self.vf_fisher = vf_fisher_loss = - vf_fisher_coef*tf.reduce_mean(tf.pow(train_model.vf - tf.stop_gradient(sample_net), 2))
         self.joint_fisher = joint_fisher_loss = pg_fisher_loss + vf_fisher_loss
 
@@ -90,7 +90,7 @@ class Model(object):
         self.step = step_model.step
         self.value = step_model.value
         self.initial_state = step_model.initial_state
-        tf.global_variables_initializer().run(session=sess)
+        tf.compat.v1.global_variables_initializer().run(session=sess)
 
 def learn(network, env, seed, total_timesteps=int(40e6), gamma=0.99, log_interval=100, nprocs=32, nsteps=20,
                  ent_coef=0.01, vf_coef=0.5, vf_fisher_coef=1.0, lr=0.25, max_grad_norm=0.5,
@@ -123,7 +123,7 @@ def learn(network, env, seed, total_timesteps=int(40e6), gamma=0.99, log_interva
     epinfobuf = deque(maxlen=100)
     nbatch = nenvs*nsteps
     tstart = time.time()
-    coord = tf.train.Coordinator()
+    coord = tf.compat.v1.train.Coordinator()
     if is_async:
         enqueue_threads = model.q_runner.create_threads(model.sess, coord=coord, start=True)
     else:
